@@ -5,7 +5,7 @@
 !*/build/.keep
 
 # DIP
-__PY_CACHE__/
+__pycache__/
 *.pyc
 
 # Div
