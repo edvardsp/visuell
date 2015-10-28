@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 
 from __future__ import print_function
 
@@ -27,6 +27,7 @@ Images = ['4.2.06-lake.tiff', 'bricks.tiff', 'bush.tiff', 'clinton.tiff']
 #
 ##########################################################################
 
+
 def main():
     for image in Images:
         img = cv2.imread('images/' + image, 0)
@@ -44,4 +45,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
