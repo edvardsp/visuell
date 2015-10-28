@@ -1,6 +1,6 @@
 # OpenGL
-bin/*
-build/*
+*/bin/*
+*/build/*
 
 # DIP
 __PY_CACHE__/
