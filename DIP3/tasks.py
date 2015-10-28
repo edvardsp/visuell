@@ -23,10 +23,11 @@ import utils as us
 
 def setWindowMax():
     mng = plt.get_current_fig_manager()
-    mng.window.showMaximized()
+    # mng.window.showMaximized()
+    mng.resize(1600, 1000)
 
 
-def showImages(imgs, titles):
+def showImages(imgs, titles, seeds=None):
     diff = len(imgs) - len(titles)
     if diff > 0:
         titles += [''] * diff
@@ -34,6 +35,12 @@ def showImages(imgs, titles):
     for i, img in enumerate(imgs):
         plt.subplot(1, len(imgs), i+1), plt.imshow(img, cmap='gray')
         plt.title(titles[i]), plt.xticks([]), plt.yticks([])
+
+        if i == 0 and seeds is not None:
+            fig = plt.gcf()
+            for seed in seeds:
+                c = plt.Circle(seed, 5., color='r')
+                fig.gca().add_artist(c)
 
     setWindowMax()
     plt.show()
@@ -51,14 +58,38 @@ def task1a(img):
     T = us.calcThreshold(img)
     thresh = us.segmentThreshold(img, T)
 
-    showImages([img, thresh], ['Original', 'Segmented T = %i' % T])
+    imgs = [img, thresh]
+    titles = ['Original', 'Segmented T = %i' % T]
+    showImages(imgs, titles)
 
     print('Done')
 
 
-def task1b(img):
+def task1b(img, seeds):
     print('Task 1B')
 
-    us.segmentRegionGrow(img)
+    threshold = 25
+    region = us.segmentRegionGrow(img, seeds, threshold, 'neumann')
+
+    imgs = [img, region]
+    titles = ['Original', 'Region T = %i' % threshold]
+    showImages(imgs, titles, seeds)
 
     print('Done')
+
+
+def task2a(img):
+    print('Task 2A')
+
+    result = us.morphNoiseRemoval(img)
+
+    imgs = [img, result]
+    titles = ['Original', 'Morph Noise Removal']
+    showImages(imgs, titles)
+
+    print('Done')
+
+
+
+
+
