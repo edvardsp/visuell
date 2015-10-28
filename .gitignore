@@ -1,0 +1,10 @@
+# OpenGL
+bin/*
+build/*
+
+# DIP
+__PY_CACHE__/
+*.pyc
+
+# Div
+*.pdf
