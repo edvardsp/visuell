@@ -34,7 +34,7 @@ def calcThreshold(img):
         # Generate masks split on the given T
         mask1 = np.zeros(img.shape, np.uint8)
         mask2 = np.zeros(img.shape, np.uint8)
-        for ind in xrange(img.size):
+        for ind in range(img.size):
             if img.item(ind) <= T:
                 mask1.itemset(ind, 1)
             else:
