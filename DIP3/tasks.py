@@ -7,8 +7,6 @@ from __future__ import print_function
 ##########################################################################
 
 # Import libraries
-import cv2
-import numpy as np
 from matplotlib import pyplot as plt
 
 # Import local files
@@ -90,6 +88,25 @@ def task2a(img):
     print('Done')
 
 
+def task2b(img):
+    print('Task 2B')
+
+    result = us.morphDistTransform(img)
+
+    imgs = [img, result]
+    titles = ['Original', 'Morph Chess Distance']
+    showImages(imgs, titles)
+
+    print('Done')
 
 
+def task2c(img):
+    print('Task 2C')
 
+    result = us.morphExtractBound(img)
+
+    imgs = [img, result]
+    titles = ['Original', 'Morph Extract Bound']
+    showImages(imgs, titles)
+
+    print('Done')

@@ -29,7 +29,7 @@ Seg_Seeds = [[(78, 255), (179, 514), (157, 251), (255, 483),
              [(140, 254), (295, 254), (414, 233), (440, 238)]]
 Segmentation = zip(Seg_Imgs, Seg_Seeds)
 
-Morphology_Imgs = ['noisy.tiff']
+Morph_Imgs = ['noisy.tiff']
 
 ##########################################################################
 #
@@ -41,12 +41,17 @@ Morphology_Imgs = ['noisy.tiff']
 def main():
     for image, seeds in Segmentation:
         img = cv2.imread('images/' + image, 0)
-        #ts.task1a(img)
-        #ts.task1b(img, seeds)
 
-    for image in Morphology_Imgs:
+        ts.task1a(img)
+        ts.task1b(img, seeds)
+
+    for image in Morph_Imgs:
         img = cv2.imread('images/' + image, 0)
+
         ts.task2a(img)
+        ts.task2b(img)
+        ts.task2c(img)
+
 
 if __name__ == '__main__':
     main()

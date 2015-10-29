@@ -19,12 +19,17 @@ import queue as qu
 
 
 def mean(src, mask=None):
-    # Returns the mean of a gray image,
-    # optional with mask
+    """
+    Returns the mean of a gray image,
+    optional with mask
+    """
     return cv2.mean(src, mask=mask)[0]
 
 
 def calcThreshold(img):
+    """
+    Calculates a good estimate of the threshold value for a given image.
+    """
     # Initial T = mean of img
     T = mean(img)
     # delta T
@@ -59,11 +64,18 @@ def calcThreshold(img):
 
 
 def segmentThreshold(img, thresh):
-    # Returns a binary gray image with given threshold
+    """
+    Returns a binary gray image with given threshold.
+    """
     return cv2.threshold(img, thresh, 255, cv2.THRESH_BINARY)[1]
 
 
 def segmentRegionGrow(img, seeds, thresh, hood='moore'):
+    """
+    Segments an image with region growing, given with a list of seeds,
+    and a difference threshold to seperate the regions.
+    Can choose between a Moore or von Neumann neighborhood.
+    """
     # Parameters
     h, w = img.shape
     output = np.zeros(img.shape, dtype=np.uint8)
@@ -142,23 +154,99 @@ def segmentRegionGrow(img, seeds, thresh, hood='moore'):
 
 
 def morphNoiseRemoval(img):
+    """
+    Removes noise from a given image through morphology.
+    Result image is given as a binary image.
+    """
+    # Turn image into binary image
     bin_img = segmentThreshold(img, 255/2)
 
-    kernel1 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (6, 6))
-    kernel2 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2, 2))
+    # Kernel used in morphology
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (6, 6))
 
-    opening = cv2.morphologyEx(bin_img, cv2.MORPH_OPEN, kernel1, iterations=3)
-    closing = cv2.morphologyEx(opening, cv2.MORPH_CLOSE, kernel1, iterations=2)
+    # Morphology OPEN, which removes noise outside the object
+    opening = cv2.morphologyEx(bin_img, cv2.MORPH_OPEN, kernel, iterations=3)
+    # Morphology CLOSE, which removes noise within the object
+    result = cv2.morphologyEx(opening, cv2.MORPH_CLOSE, kernel, iterations=2)
 
-    result = cv2.morphologyEx(closing, cv2.MORPH_OPEN, kernel2, iterations=5)
-
+    # Return the result
     return result
 
 
+def morphDistTransform(img):
+    """
+    Computes and returns a chess distance transform of a given image
+    with the use of morphology.
+    """
+    # Get the dimensions
+    h, w = img.shape
+
+    # Get the noise free image
+    noisefree = morphNoiseRemoval(img)
+    # Kernel to be used in morphology
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+
+    # Output image
+    result = np.zeros(img.shape, np.uint8)
+    # Variable to be eroded on each iteration
+    aux_img = noisefree
+
+    # Set of pixels not yet eroded away
+    untracked = {(x, y) for x in range(w) for y in range(h)}
+    # Dict keeping track of the level each pixel erodes away
+    levels = {(x, y): 0 for x in range(w) for y in range(h)}
+
+    # Current iterations of erosion
+    curr_level = -1
+
+    # While there are pixels not eroded away
+    while untracked != set():
+        # Update the iteration
+        curr_level += 1
+
+        # Set of pixels to be removed from untracked
+        to_remove = set()
+        # For each pixel not eroded away
+        for px in untracked:
+            # Get the current value
+            px_val = aux_img[px[1]][px[0]]
+            # If it has eroded away
+            if px_val == 0:
+                # Store the current iteration
+                levels[px] = curr_level
+                # and save it to be removed later
+                to_remove.add(px)
+
+        # Remove the eroded pixels from the set
+        untracked ^= to_remove
+        # Erode the image on more iteration
+        aux_img = cv2.morphologyEx(aux_img, cv2.MORPH_ERODE, kernel)
+
+    # For all pixels
+    for y in range(h):
+        for x in range(w):
+            px = (x, y)
+            # Calculate the new value dependent on the number of iterations
+            new_val = int(255 * levels[px] / curr_level)
+            # And store it in the result image
+            result[y][x] = new_val
+
+    # Return the result
+    return result
 
 
+def morphExtractBound(img):
+    """
+    Computes and returns a boundary image of a given image with
+    the use of morphology.
+    """
+    # Kernel to be used in morphology
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
 
+    # Get the noise free image
+    noisefree = morphNoiseRemoval(img)
+    # Erosion of the noise free image for k iterations
+    erode = cv2.morphologyEx(noisefree, cv2.MORPH_ERODE, kernel, iterations=3)
 
-
-
-
+    # Return the boundary image
+    return noisefree - erode
