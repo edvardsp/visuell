@@ -16,7 +16,6 @@ __pycache__/
 *.exe
 *.exp
 *.pdb
-*.dll
 *.user
 *.aps
 *.pch
@@ -33,7 +32,6 @@ __pycache__/
 *.log
 *.zip
 [Dd]ebug*/
-*.lib
 *.sbr
 Thumbs.db
 [Ll]ib/
