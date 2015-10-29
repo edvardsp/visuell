@@ -1,6 +1,8 @@
 # OpenGL
 */bin/*
 !*/bin/.keep
+!*/bin/*.frag
+!*/bin/*.vert
 */build/*
 !*/build/.keep
 
