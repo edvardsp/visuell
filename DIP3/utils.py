@@ -38,13 +38,8 @@ def calcThreshold(img):
     # Loop until acceptable T found
     while True:
         # Generate masks split on the given T
-        mask1 = np.zeros(img.shape, np.uint8)
-        mask2 = np.zeros(img.shape, np.uint8)
-        for ind in range(img.size):
-            if img.item(ind) <= T:
-                mask1.itemset(ind, 1)
-            else:
-                mask2.itemset(ind, 1)
+        mask1 = np.uint8(np.where(img < int(T), 1, 0))
+        mask2 = np.uint8(np.where(img > int(T), 1, 0))
 
         # Find the mean of the two groups
         m1 = mean(img, mask1)
