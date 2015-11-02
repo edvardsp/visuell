@@ -249,4 +249,4 @@ def morphExtractBound(img):
     erode = cv2.morphologyEx(noisefree, cv2.MORPH_ERODE, kernel, iterations=3)
 
     # Return the boundary image
-    return noisefree - erode
+    return noisefree & ~erode
