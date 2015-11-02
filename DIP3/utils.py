@@ -173,61 +173,43 @@ def morphDistTransform(img):
     Computes and returns a chess distance transform of a given image
     with the use of morphology.
     """
-    # Get the dimensions
-    h, w = img.shape
-
     # Get the noise free image
     noisefree = morphNoiseRemoval(img)
     # Kernel to be used in morphology
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
 
-    # Output image
-    result = np.zeros(img.shape, np.uint8)
     # Variable to be eroded on each iteration
     aux_img = noisefree
 
-    # Set of pixels not yet eroded away
-    untracked = {(x, y) for x in range(w) for y in range(h)}
-    # Dict keeping track of the level each pixel erodes away
-    levels = {(x, y): 0 for x in range(w) for y in range(h)}
+    # Keeps track of levels
+    levels = np.empty(img.shape, dtype=np.uint8)
+    levels.fill(255)
+    mask = np.zeros(img.shape, dtype=np.uint8)
 
     # Current iterations of erosion
     curr_level = -1
 
     # While there are pixels not eroded away
-    while untracked != set():
+    ones = np.ones(img.shape, dtype=np.uint8)
+    while not (mask == ones).all():
         # Update the iteration
         curr_level += 1
 
-        # Set of pixels to be removed from untracked
-        to_remove = set()
-        # For each pixel not eroded away
-        for px in untracked:
-            # Get the current value
-            px_val = aux_img[px[1]][px[0]]
-            # If it has eroded away
-            if px_val == 0:
-                # Store the current iteration
-                levels[px] = curr_level
-                # and save it to be removed later
-                to_remove.add(px)
+        # Create mask of eroded pixels
+        mask = np.uint8(np.where(aux_img == 0, 1, 0))
+        # Subtract from levels
+        levels -= mask
 
-        # Remove the eroded pixels from the set
-        untracked ^= to_remove
         # Erode the image on more iteration
         aux_img = cv2.morphologyEx(aux_img, cv2.MORPH_ERODE, kernel)
 
-    # For all pixels
-    for y in range(h):
-        for x in range(w):
-            px = (x, y)
-            # Calculate the new value dependent on the number of iterations
-            new_val = int(255 * levels[px] / curr_level)
-            # And store it in the result image
-            result[y][x] = new_val
+    # Scale the result to the range(0, 256)
+    A = 255 / curr_level
+    B = 255 * levels.min() / curr_level
+    levels = A * levels - B
 
     # Return the result
-    return result
+    return np.uint8(levels)
 
 
 def morphExtractBound(img):
