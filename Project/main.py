@@ -1,158 +1,128 @@
 #!/usr/bin/python
 
-from __future__ import print_function
+from __future__ import print_function, division
 
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
-from scipy.ndimage import label 
-
-Images = ['image1.png', 'image2.png', 'image3.png']
-
-def auto_canny(img, sigma=0.33):
-    v = np.median(img)
-
-    lower = int(max(0, (1.0 - sigma) * v))
-    upper = int(min(255, (1.0 + sigma) * v))
-    edged = cv2.Canny(img, lower, upper)
-
-    return edged
+import argparse
 
 
-def edgeTest(img):
-    imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+def neighborhood(hood, circle):
+    def dist(c1, c2):
+        c1 = np.int64(c1)
+        c2 = np.int64(c2)
+        diff = (c1[0] - c2[0])**2 + (c1[1] - c2[1])**2
+        return np.sqrt(diff)
 
-    for ch in list(cv2.split(img)) + [gray]:
-        blur = cv2.GaussianBlur(ch, (5, 5), 0)
-        method = cv2.THRESH_BINARY + cv2.THRESH_OTSU
-        ret, otsu = cv2.threshold(blur, 0, 255, method)
-        print('Threshold is {}'.format(ret))
+    for house in hood:
+        center = tuple(house[:2])
+        if dist(center, circle) < 60.0:
+            return True
 
-        print(ch[(350, 241)])
-        print(ch[(382, 284)])
-        cv2.circle(ch, (350, 241), 2, 255, 2)
-        cv2.circle(ch, (382, 284), 2, 255, 2)
-
-        plt.subplot(121), plt.imshow(ch, cmap='gray'), plt.xticks([]), plt.yticks([])
-        plt.subplot(122), plt.imshow(otsu, cmap='gray'), plt.xticks([]), plt.yticks([])
-        plt.show()
-
-        circles = cv2.HoughCircles(otsu, cv2.HOUGH_GRADIENT, 1, 100,
-                                   param1=50,
-                                   param2=15,
-                                   minRadius=25,
-                                   maxRadius=35)
-
-        if circles is not None:
-            print(circles)
-            circles = np.uint16(np.around(circles))
-            for i in circles[0, :]:
-                cv2.circle(imgRGB, (i[0], i[1]), i[2], (0, 255, 0), 2)
-                cv2.circle(imgRGB, (i[0], i[1]), 2, (0, 0, 255), 3)
-
-    plt.imshow(imgRGB), plt.xticks([]), plt.yticks([])
-    plt.show()
+    return False
 
 
-def edgeTest2(img):
-    imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    gimg = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+def getCircles(gray):
+    gray = cv2.GaussianBlur(gray, (5, 5), 3)
 
-    for ch in list(cv2.split(img)) + [gimg]:
-        gray = cv2.GaussianBlur(ch, (5, 5), 3)
+    canny = cv2.Canny(gray, 0, 100)
 
-        border = cv2.dilate(gray, None, iterations=5)
-        border = border - cv2.erode(border, None)
+    circles = cv2.HoughCircles(canny, cv2.HOUGH_GRADIENT, 1, 80,
+                               param1=50,
+                               param2=15,
+                               minRadius=29,
+                               maxRadius=35)
 
-        edges = gray - cv2.erode(gray, None)
-        ret, bin_edge = cv2.threshold(edges, 0, 255, cv2.THRESH_OTSU)
-        fill = bin_edge.copy()
-        h, w = fill.shape
-        mask = np.zeros((h + 2, w + 2), dtype=np.uint8)
-
-        circles = cv2.HoughCircles(bin_edge, cv2.HOUGH_GRADIENT, 1, 80,
-                                   param1=50,
-                                   param2=15,
-                                   minRadius=29,
-                                   maxRadius=35)
-
-        if circles is not None:
-            print(circles)
-            circles = np.uint16(np.around(circles))
-            for i in circles[0, :]:
-                center = tuple(i[:2])
-                cv2.circle(imgRGB, center, i[2], (0, 255, 0), 2)
-                cv2.circle(imgRGB, center, 2, (0, 0, 255), 3)
-                cv2.floodFill(fill, mask, center, 255)
-
-        plt.subplot(221), plt.imshow(gray, cmap='gray'), plt.xticks([]), plt.yticks([])
-        plt.subplot(222), plt.imshow(edges, cmap='gray'), plt.xticks([]), plt.yticks([])
-        plt.subplot(223), plt.imshow(bin_edge, cmap='gray'), plt.xticks([]), plt.yticks([])
-        plt.subplot(224), plt.imshow(fill, cmap='gray'), plt.xticks([]), plt.yticks([])
-        plt.show()
-
-    plt.imshow(imgRGB), plt.xticks([]), plt.yticks([])
-    plt.show()
+    return circles
 
 
-def edgeTest3(img):
-    imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    gimg = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+def addCircles(hood, circles):
+    circles = np.uint16(np.around(circles))
+    for i in circles[0, :]:
+        center = tuple(i[:2])
+        if not neighborhood(hood, center):
+            hood.append(i)
 
-    for ch in list(cv2.split(img)) + [gimg]:
-        gray = cv2.GaussianBlur(ch, (5, 5), 3)
-
-        border = gray - cv2.erode(gray, None)
-
-        lbl = np.zeros(gray.shape, np.int32)
-
-        h, w = gray.shape
-        markers = [(h/5*j+h/10, w/8*i+w/16) for i in range(8) for j in range(5)]
-        mask = np.zeros((h+2, w+2), dtype=np.uint8)
-        for mark in markers:
-            lbl[mark] = gray[mark]
-            cv2.floodFill(border, mask, mark[::-1], 255)
-
-        cv2.watershed(img, lbl)
-        lbl[lbl < 1] = 0
-
-        lbl = np.uint8(lbl)
-        lbl = cv2.erode(lbl, None)
-        lbl[lbl != 0] = 255
-
-        plt.subplot(121), plt.imshow(ch, cmap='gray'), plt.xticks([]), plt.yticks([])
-        plt.subplot(122), plt.imshow(lbl, cmap='gray'), plt.xticks([]), plt.yticks([])
-        plt.show()
+    return neighborhood
 
 
-def plot(imgs, titles):
-    i = 1
-    for img, title in zip(imgs, titles):
-        if i == 1:
-            plt.subplot(2, 2, i), plt.imshow(img)
+def seperate(gimg, hood):
+    white, red = [], []
+    definite = np.uint16(np.around(getCircles(gimg)[:, :, :2]))
+    for chip in hood:
+        center = tuple(chip[:2])
+        if neighborhood(definite[0], center):
+            white.append(chip)
         else:
-            plt.subplot(2, 2, i), plt.imshow(img, cmap='gray')
-        plt.title(title), plt.xticks([]), plt.yticks([])
-        i += 1
+            red.append(chip)
 
+    return red, white
+
+
+def detectCorner(img):
+    _, _, r = cv2.split(img)
+    h, w = r.shape
+    px = (w/16, h/10)
+    return 'r' if r[px] > 127 else 'b'
+
+
+def saveOutput(name, shape, red, white, corner):
+    h, w = shape
+    file_name = name.partition('/')[-1]
+    output_name = "{0}_output.txt".format(*file_name.split("."))
+    with open(output_name, 'w') as file:
+        file.write("{}\n".format(corner))
+        for chip in red:
+            file.write("{}f,{}f,{}\n".format(chip[0]/w, chip[1]/h, 'r'))
+        for chip in white:
+            file.write("{}f,{}f,{}\n".format(chip[0]/w, chip[1]/h, 'w'))
+
+
+def showOutput(img, red, white):
+    imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+    for chip in red:
+        center = tuple(chip[:2])
+        cv2.circle(imgRGB, center, chip[2], (0, 255, 255), 2)
+        cv2.circle(imgRGB, center, 2, (0, 0, 255), 3)
+
+    for chip in white:
+        center = tuple(chip[:2])
+        cv2.circle(imgRGB, center, chip[2], (255, 50, 255), 2)
+        cv2.circle(imgRGB, center, 2, (0, 0, 255), 3)
+
+    plt.imshow(imgRGB), plt.xticks([]), plt.yticks([])
     plt.show()
+
+
+def edgeTest(image):
+    img = cv2.imread(image)
+    gimg = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    total = []
+    for ch in cv2.split(img):
+        circles = getCircles(ch)
+
+        if circles is not None:
+            addCircles(total, circles)
+
+    red, white = seperate(gimg, total)
+    corner = detectCorner(img)
+    saveOutput(image, gimg.shape, red, white, corner)
+
+    showOutput(img, red, white)
 
 
 def main():
-    for image in Images:
-        print('Image "{}"'.format(image))
-        img = cv2.imread('images/' + image)
-        imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        b, g, r = cv2.split(img)
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-i", "--image", help="Image to process")
 
-        #plot([imgRGB, b, g, r], ['Original', 'Blue ch', 'Green Ch', 'Red ch'])
+    args = parser.parse_args()
 
-        #edgeTest(img)
-        #edgeTest2(img)
-        edgeTest3(img)
+    if args.image is not None:
+        edgeTest(args.image)
 
 
 if __name__ == '__main__':
