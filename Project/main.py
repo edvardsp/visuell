@@ -71,7 +71,7 @@ def detectCorner(img):
 def saveOutput(name, shape, red, white, corner):
     h, w = shape
     file_name = name.partition('/')[-1]
-    output_name = "{0}_output.txt".format(*file_name.split("."))
+    output_name = "{0}_output.kappa".format(*file_name.split("."))
     with open(output_name, 'w') as file:
         file.write("{}\n".format(corner))
         for chip in red:
