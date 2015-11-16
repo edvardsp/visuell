@@ -2,11 +2,12 @@
 
 from __future__ import print_function, division
 
+import sys
+import argparse
+
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
-
-import argparse
+# import matplotlib.pyplot as plt
 
 
 def neighborhood(hood, circle):
@@ -70,35 +71,45 @@ def detectCorner(img):
 
 def saveOutput(name, shape, red, white, corner):
     h, w = shape
-    file_name = name.partition('/')[-1]
+    if '/' in name:
+        file_name = name.partition('/')[-1]
+    elif '\\' in name:
+        file_name = name.partition('\\')[-1]
+    else:
+        file_name = name
     output_name = "{0}_output.kappa".format(*file_name.split("."))
-    with open(output_name, 'w') as file:
-        file.write("{}\n".format(corner))
+
+    with open(output_name, 'w') as f:
+        f.write("{}\n".format(corner))
         for chip in red:
-            file.write("{}f,{}f,{}\n".format(chip[0]/w, chip[1]/h, 'r'))
+            f.write("{}f,{}f,{}\n".format(chip[0]/w, chip[1]/h, 'r'))
         for chip in white:
-            file.write("{}f,{}f,{}\n".format(chip[0]/w, chip[1]/h, 'w'))
+            f.write("{}f,{}f,{}\n".format(chip[0]/w, chip[1]/h, 'w'))
 
 
-def showOutput(img, red, white):
-    imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+# def showOutput(img, red, white):
+#     imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-    for chip in red:
-        center = tuple(chip[:2])
-        cv2.circle(imgRGB, center, chip[2], (0, 255, 255), 2)
-        cv2.circle(imgRGB, center, 2, (0, 0, 255), 3)
+#     for chip in red:
+#         center = tuple(chip[:2])
+#         cv2.circle(imgRGB, center, chip[2], (0, 255, 255), 2)
+#         cv2.circle(imgRGB, center, 2, (0, 0, 255), 3)
 
-    for chip in white:
-        center = tuple(chip[:2])
-        cv2.circle(imgRGB, center, chip[2], (255, 50, 255), 2)
-        cv2.circle(imgRGB, center, 2, (0, 0, 255), 3)
+#     for chip in white:
+#         center = tuple(chip[:2])
+#         cv2.circle(imgRGB, center, chip[2], (255, 50, 255), 2)
+#         cv2.circle(imgRGB, center, 2, (0, 0, 255), 3)
 
-    plt.imshow(imgRGB), plt.xticks([]), plt.yticks([])
-    plt.show()
+#     plt.imshow(imgRGB), plt.xticks([]), plt.yticks([])
+#     plt.show()
 
 
 def edgeTest(image):
     img = cv2.imread(image)
+    if img is None:
+        print('File "{}" does not exist'.format(image))
+        sys.exit(1)
+
     gimg = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     total = []
@@ -112,7 +123,7 @@ def edgeTest(image):
     corner = detectCorner(img)
     saveOutput(image, gimg.shape, red, white, corner)
 
-    showOutput(img, red, white)
+#    showOutput(img, red, white)
 
 
 def main():
@@ -123,6 +134,8 @@ def main():
 
     if args.image is not None:
         edgeTest(args.image)
+    else:
+        parser.print_usage()
 
 
 if __name__ == '__main__':
