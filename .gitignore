@@ -12,3 +12,9 @@ __pycache__/
 
 # Div
 *.pdf
+
+#VS
+Debug
+Release
+*.opensdf
+.vs
